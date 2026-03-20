@@ -31,12 +31,12 @@ amazon_sentiment_analysis/
 └── requirements.txt
 ```
 
-
 ## Quick start
 
 1. create and activate venv
    - `python -m venv venv`
    - `source venv/bin/activate`
+   - `Note: i am using conda environment. you can use whaterver you want`
 
 2. install dependencies
    - `pip install -r requirements.txt`
@@ -72,4 +72,3 @@ curl -X POST http://localhost:8000/api/predict \
 - Use Python 3.11+.
 - GPU speeds up training.
 - Checkpoints are stored in `checkpoints/best_lstm.pt`.
-
