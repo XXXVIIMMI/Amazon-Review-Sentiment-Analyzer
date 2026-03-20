@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Review Sentiment Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --amz-navy:   #131921;
+  --amz-navy2:  #232f3e;
+  --amz-orange: #FF9900;
+  --amz-btn:    #FFD814;
+  --amz-btn-b:  #FCD200;
+  --amz-buy:    #FFA41C;
+  --amz-link:   #007185;
+  --amz-link2:  #C7511F;
+  --amz-red:    #B12704;
+  --amz-green:  #007600;
+  --amz-grey:   #565959;
+  --amz-lgrey:  #CCCCCC;
+  --amz-bg:     #EAEDED;
+  --amz-white:  #FFFFFF;
+  --amz-border: #D5D9D9;
+  --amz-shadow: rgba(213,217,217,0.5);
+  --amz-star:   #FF9900;
+}
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--amz-bg);
+  color: #0F1111;
+  font-family: 'Noto Sans', Arial, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── TOP NAV ──────────────────────────────────────── */
+.topbar {
+  background: var(--amz-navy);
+  position: sticky; top: 0; z-index: 200;
+}
+
+.topbar-inner {
+  display: flex; align-items: stretch;
+  height: 60px; max-width: 1500px;
+  margin: 0 auto; padding: 0 12px; gap: 4px;
+}
+
+.amz-logo {
+  display: flex; align-items: center;
+  padding: 8px 9px; cursor: pointer;
+  border: 2px solid transparent; border-radius: 2px;
+  flex-shrink: 0;
+}
+.amz-logo:hover { border-color: white; }
+.logo-text { font-size: 1.5rem; font-weight: 700; color: white; letter-spacing: -0.5px; line-height: 1; }
+.logo-text span { color: var(--amz-orange); }
+
+.nav-deliver {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 8px 9px; color: white; cursor: pointer;
+  border: 2px solid transparent; border-radius: 2px; flex-shrink: 0;
+}
+.nav-deliver:hover { border-color: white; }
+.nav-deliver .d1 { font-size: 0.65rem; color: #ccc; }
+.nav-deliver .d2 { font-size: 0.8rem; font-weight: 700; }
+
+.search-wrap {
+  flex: 1; display: flex; align-items: center;
+  height: 40px; margin: auto 0;
+  border-radius: 4px; overflow: hidden;
+  border: 2px solid var(--amz-orange);
+  max-width: 680px;
+}
+.search-cat {
+  background: #F3F3F3; border: none;
+  border-right: 1px solid #CDCDCD;
+  padding: 0 8px; height: 100%;
+  font-size: 0.73rem; color: #555; cursor: pointer;
+}
+.search-inp {
+  flex: 1; border: none; outline: none;
+  padding: 0 10px; font-size: 0.9rem; height: 100%; background: white;
+}
+.search-btn {
+  background: var(--amz-orange); border: none;
+  width: 44px; height: 100%; cursor: pointer;
+  font-size: 1rem; transition: background 0.12s;
+}
+.search-btn:hover { background: #e68a00; }
+
+.nav-right { display: flex; align-items: stretch; margin-left: auto; flex-shrink: 0; }
+
+.nav-btn {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 8px 9px; color: white; cursor: pointer;
+  border: 2px solid transparent; border-radius: 2px;
+  font-size: 0.72rem; white-space: nowrap;
+}
+.nav-btn:hover { border-color: white; }
+.nav-btn .l1 { font-size: 0.65rem; color: #ccc; }
+.nav-btn .l2 { font-size: 0.82rem; font-weight: 700; }
+
+.nav-cart {
+  display: flex; align-items: center; gap: 3px;
+  padding: 4px 9px; color: white; cursor: pointer;
+  border: 2px solid transparent; border-radius: 2px;
+}
+.nav-cart:hover { border-color: white; }
+.cart-icon { position: relative; display: flex; align-items: center; }
+.cart-count {
+  position: absolute; top: -4px; left: 14px;
+  color: var(--amz-orange); font-size: 1rem;
+  font-weight: 700; line-height: 1; min-width: 14px;
+  text-align: center;
+}
+.cart-lbl { font-size: 0.82rem; font-weight: 700; color: white; align-self: flex-end; padding-bottom: 4px; }
+
+/* ── SUBNAV ───────────────────────────────────────── */
+.subnav { background: var(--amz-navy2); }
+.subnav-inner {
+  display: flex; align-items: center;
+  height: 38px; max-width: 1500px;
+  margin: 0 auto; padding: 0 12px; gap: 2px; overflow: hidden;
+}
+.snav-btn {
+  color: white; font-size: 0.8rem;
+  padding: 6px 10px; cursor: pointer;
+  border: 2px solid transparent; border-radius: 2px;
+  white-space: nowrap;
+}
+.snav-btn:hover { border-color: white; }
+.snav-btn.hi { color: var(--amz-orange); font-weight: 700; }
+
+/* ── BREADCRUMB ───────────────────────────────────── */
+.breadcrumb {
+  max-width: 1500px; margin: 0 auto;
+  padding: 8px 14px; font-size: 0.78rem;
+  color: var(--amz-grey);
+  display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+}
+.breadcrumb a { color: var(--amz-link); cursor: pointer; }
+.breadcrumb a:hover { color: var(--amz-link2); text-decoration: underline; }
+
+/* ── MAIN GRID ────────────────────────────────────── */
+.main-grid {
+  max-width: 1500px; margin: 0 auto;
+  padding: 0 14px 2rem;
+  display: grid; grid-template-columns: 1fr 330px;
+  gap: 14px; align-items: start;
+}
+@media(max-width:820px){ .main-grid { grid-template-columns: 1fr; } }
+
+/* ── CARD ─────────────────────────────────────────── */
+.amz-card {
+  background: var(--amz-white);
+  border: 1px solid var(--amz-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px var(--amz-shadow);
+  overflow: hidden;
+}
+
+/* ── PRODUCT HEADER ───────────────────────────────── */
+.prod-head { padding: 14px 16px 0; }
+
+.prod-brand {
+  font-size: 0.82rem; color: var(--amz-link);
+  cursor: pointer; margin-bottom: 4px; display: inline-block;
+}
+.prod-brand:hover { color: var(--amz-link2); text-decoration: underline; }
+
+.prod-title {
+  font-size: 1.3rem; font-weight: 400;
+  line-height: 1.4; color: #0F1111; margin-bottom: 8px;
+}
+
+.prod-meta {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.amz-stars { color: var(--amz-star); font-size: 0.95rem; letter-spacing: -1px; }
+.rating-link { color: var(--amz-link); font-size: 0.82rem; cursor: pointer; }
+.rating-link:hover { color: var(--amz-link2); text-decoration: underline; }
+.prod-divider { border: none; border-top: 1px solid var(--amz-border); margin-bottom: 12px; }
+
+/* ── INPUT ────────────────────────────────────────── */
+.input-sec { padding: 0 16px 14px; }
+.input-lbl { font-size: 0.88rem; font-weight: 700; display: block; margin-bottom: 6px; color: #0F1111; }
+
+textarea {
+  width: 100%; min-height: 120px;
+  border: 1px solid #888; border-radius: 3px;
+  padding: 8px 10px; font-family: inherit;
+  font-size: 0.9rem; line-height: 1.6; color: #0F1111;
+  resize: vertical; outline: none; background: white;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+textarea:focus { border-color: #e77600; box-shadow: 0 0 0 3px rgba(228,121,17,0.5); }
+textarea::placeholder { color: #aaa; }
+
+.input-bar {
+  display: flex; align-items: center;
+  gap: 8px; margin-top: 8px; flex-wrap: wrap;
+}
+
+/* Amazon yellow button */
+.btn-amz {
+  background: linear-gradient(to bottom, #FFE14D, #F0C14B);
+  border: 1px solid var(--amz-btn-b); border-radius: 3px;
+  padding: 7px 16px; font-size: 0.85rem; color: #111;
+  cursor: pointer; transition: all 0.12s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset;
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.btn-amz:hover { background: linear-gradient(to bottom, #F7D94D, #DDB347); border-color: #a88734; }
+.btn-amz:active { background: #f0c14b; transform: translateY(1px); }
+
+/* White secondary */
+.btn-sec {
+  background: linear-gradient(to bottom, #fff, #f7f8f8);
+  border: 1px solid #D5D9D9; border-radius: 3px;
+  padding: 7px 14px; font-size: 0.85rem; color: #0F1111;
+  cursor: pointer; transition: all 0.12s;
+}
+.btn-sec:hover { background: linear-gradient(to bottom, #f0f2f2, #e7e9ec); border-color: #adb1b8; }
+
+.char-ct { font-size: 0.78rem; color: var(--amz-grey); margin-left: auto; }
+
+/* ── LOADING ──────────────────────────────────────── */
+.amz-loading { display: none; align-items: center; gap: 10px; padding: 0 16px 14px; font-size: 0.85rem; color: var(--amz-grey); }
+.amz-loading.on { display: flex; }
+.amz-spinner { width: 18px; height: 18px; border: 2px solid #eee; border-top-color: var(--amz-orange); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESULT ───────────────────────────────────────── */
+.result-sec { padding: 0 16px 16px; }
+
+.amz-result {
+  display: none; border: 1px solid var(--amz-border);
+  border-radius: 4px; overflow: hidden;
+  animation: fadeUp 0.3s ease;
+}
+.amz-result.show { display: block; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+.res-stripe { height: 4px; }
+.rc-pos .res-stripe { background: var(--amz-green); }
+.rc-neg .res-stripe { background: var(--amz-red); }
+.rc-neu .res-stripe { background: var(--amz-grey); }
+
+.res-body { padding: 14px; }
+
+.res-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.res-emoji { font-size: 2.2rem; line-height: 1; flex-shrink: 0; }
+.res-info { flex: 1; }
+
+.res-verdict { font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
+.rc-pos .res-verdict { color: var(--amz-green); }
+.rc-neg .res-verdict { color: var(--amz-red); }
+.rc-neu .res-verdict { color: var(--amz-grey); }
+
+.res-sub  { font-size: 0.82rem; color: var(--amz-grey); margin-top: 3px; }
+.res-conf { font-size: 0.8rem; color: var(--amz-grey); margin-top: 2px; }
+.res-stars-r { margin-left: auto; flex-shrink: 0; font-size: 1.1rem; }
+
+/* Score bars */
+.score-bars { margin-bottom: 14px; }
+.score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.score-lbl { font-size: 0.8rem; width: 58px; flex-shrink: 0; color: #0F1111; }
+.score-track { flex: 1; height: 14px; background: #F0F2F2; border-radius: 2px; overflow: hidden; border: 1px solid #DDD; }
+.score-fill { height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.23,1,0.32,1); border-radius: 2px; }
+.sf-p { background: linear-gradient(to right,#00a650,#007600); }
+.sf-n { background: linear-gradient(to right,#e74c3c,#B12704); }
+.sf-u { background: linear-gradient(to right,#95a5a6,#565959); }
+.score-pct { font-size: 0.78rem; color: var(--amz-grey); width: 36px; text-align: right; font-weight: 600; }
+
+/* Attention */
+.attn-sec { border-top: 1px solid var(--amz-border); padding-top: 12px; }
+.attn-lbl { font-size: 0.8rem; font-weight: 700; color: #0F1111; margin-bottom: 8px; }
+.tok-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+.tok { font-size: 0.78rem; padding: 3px 8px; border-radius: 12px; border: 1px solid; cursor: default; transition: transform 0.1s; font-weight: 500; }
+.tok:hover { transform: scale(1.06); }
+
+/* ── STATS ────────────────────────────────────────── */
+.stats-strip { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid var(--amz-border); background: #F7FAFA; }
+.stat-cell { padding: 12px 8px; text-align: center; border-right: 1px solid var(--amz-border); }
+.stat-cell:last-child { border-right: none; }
+.stat-n { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.sn-p { color: var(--amz-green); } .sn-n { color: var(--amz-red); } .sn-u { color: var(--amz-grey); }
+.stat-l { font-size: 0.72rem; color: var(--amz-grey); margin-top: 3px; }
+
+/* ── SIDEBAR ──────────────────────────────────────── */
+.sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+/* Buy box */
+.buybox {
+  background: white; border: 1px solid var(--amz-border);
+  border-radius: 8px; padding: 16px;
+  box-shadow: 0 2px 5px var(--amz-shadow);
+}
+.bb-label { font-size: 1.1rem; font-weight: 700; color: #0F1111; margin-bottom: 12px; }
+.bb-row { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px; gap: 8px; }
+.bb-row .bk { color: var(--amz-grey); flex-shrink: 0; }
+.bb-row .bv { color: var(--amz-link); font-weight: 500; text-align: right; }
+.bb-divider { border: none; border-top: 1px solid var(--amz-border); margin: 12px 0; }
+
+.btn-cart {
+  width: 100%; background: linear-gradient(to bottom,#FFD814,#F7CA00);
+  border: 1px solid #FCD200; border-radius: 20px;
+  padding: 9px; font-size: 0.88rem; color: #111;
+  cursor: pointer; margin-bottom: 8px; transition: all 0.12s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset;
+}
+.btn-cart:hover { background: linear-gradient(to bottom,#f5c518,#e2b004); }
+
+.btn-now {
+  width: 100%; background: linear-gradient(to bottom,#FFA41C,#FF8F00);
+  border: 1px solid #e68900; border-radius: 20px;
+  padding: 9px; font-size: 0.88rem; color: #111;
+  cursor: pointer; transition: all 0.12s;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset;
+}
+.btn-now:hover { background: linear-gradient(to bottom,#f0940c,#e07b00); }
+
+/* Sample reviews */
+.reviews-card {
+  background: white; border: 1px solid var(--amz-border);
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 2px 5px var(--amz-shadow);
+}
+.rv-header { padding: 12px 14px; border-bottom: 1px solid var(--amz-border); font-size: 1rem; font-weight: 700; }
+
+.rv-item {
+  padding: 10px 14px; border-bottom: 1px solid #f5f5f5;
+  cursor: pointer; transition: background 0.1s;
+}
+.rv-item:last-child { border-bottom: none; }
+.rv-item:hover { background: #F7FAFA; }
+
+.rv-top { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.rv-avatar { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: white; flex-shrink: 0; }
+.av-b { background: #3d85c8; } .av-r { background: #cc4125; } .av-o { background: #e69138; } .av-g { background: #6aa84f; } .av-p { background: #674ea7; }
+.rv-name { font-size: 0.78rem; font-weight: 700; }
+.rv-stars { color: var(--amz-star); font-size: 0.78rem; }
+.rv-stars.dim { color: #ccc; }
+.rv-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 2px; }
+.rv-body { font-size: 0.77rem; color: #444; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* History */
+.hist-card {
+  background: white; border: 1px solid var(--amz-border);
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 2px 5px var(--amz-shadow);
+}
+.hist-header { padding: 12px 14px; border-bottom: 1px solid var(--amz-border); display: flex; align-items: center; justify-content: space-between; }
+.hist-header span { font-size: 1rem; font-weight: 700; }
+.hist-clr { font-size: 0.78rem; color: var(--amz-link); background: none; border: none; cursor: pointer; }
+.hist-clr:hover { color: var(--amz-link2); text-decoration: underline; }
+.hist-list { max-height: 210px; overflow-y: auto; }
+.hist-list::-webkit-scrollbar { width: 6px; }
+.hist-list::-webkit-scrollbar-thumb { background: var(--amz-border); }
+.hist-row { display: grid; grid-template-columns: 8px 1fr auto; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f5f5f5; font-size: 0.78rem; }
+.hist-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.hist-txt { color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-badge { font-size: 0.7rem; font-weight: 700; padding: 1px 6px; border-radius: 2px; }
+.hb-p { background: #DFF0D8; color: var(--amz-green); }
+.hb-n { background: #F2DEDE; color: var(--amz-red); }
+.hb-u { background: #F5F5F5; color: var(--amz-grey); }
+.hist-empty { padding: 16px; text-align: center; color: var(--amz-grey); font-size: 0.82rem; }
+
+/* ── BACK TO TOP + FOOTER ─────────────────────────── */
+.back-top { background: #37475A; color: white; text-align: center; padding: 12px; font-size: 0.85rem; cursor: pointer; margin-top: 1.5rem; }
+.back-top:hover { background: #485769; }
+
+.amz-footer { background: var(--amz-navy2); padding: 16px; text-align: center; color: #DDD; font-size: 0.78rem; }
+.amz-footer .ft-links { display: flex; justify-content: center; gap: 18px; margin-bottom: 10px; flex-wrap: wrap; }
+.amz-footer a { color: #DDD; cursor: pointer; }
+.amz-footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="amz-logo">
+      <div>
+        <div class="logo-text">amazon</div>
+      </div>
+    </div>
+
+    <div class="nav-deliver">
+      <span class="d1">Deliver to</span>
+      <span class="d2">📍 United States</span>
+    </div>
+
+    <div class="search-wrap">
+      <select class="search-cat">
+        <option>All</option><option>Reviews</option><option>Electronics</option><option>Books</option>
+      </select>
+      <input class="search-inp" type="text" placeholder="Search Amazon" />
+      <button class="search-btn">🔍</button>
+    </div>
+
+    <div class="nav-right">
+      <div class="nav-btn">
+        <span class="l1">Hello, Sign in</span>
+        <span class="l2">Account &amp; Lists ▾</span>
+      </div>
+      <div class="nav-btn">
+        <span class="l1">Returns</span>
+        <span class="l2">&amp; Orders</span>
+      </div>
+      <div class="nav-cart">
+        <div class="cart-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 32 32" fill="white">
+            <path d="M4 4h2.5l3.5 14h14l3-10H9"/>
+            <circle cx="13" cy="26" r="2"/>
+            <circle cx="24" cy="26" r="2"/>
+          </svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </div>
+        <span class="cart-lbl">Cart</span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- SUBNAV -->
+<div class="subnav">
+  <div class="subnav-inner">
+    <div class="snav-btn" style="font-weight:700;">☰ All</div>
+    <div class="snav-btn">Today's Deals</div>
+    <div class="snav-btn">Customer Service</div>
+    <div class="snav-btn">Gift Cards</div>
+    <div class="snav-btn">Sell</div>
+    <div class="snav-btn hi">⭐ Sentiment AI</div>
+  </div>
+</div>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <a>Tools &amp; Home Improvement</a> ›
+  <a>AI Tools</a> ›
+  <a>Sentiment Analysis</a> ›
+  <span>Review Analyzer</span>
+</div>
+
+<!-- MAIN -->
+<div class="main-grid">
+
+  <!-- LEFT -->
+  <div>
+    <div class="amz-card">
+
+      <div class="prod-head">
+        <a class="prod-brand">Amazon Sentiment Analyzer</a>
+        <div class="prod-title">LSTM Neural Sentiment Analysis — Understand Customer Review Tone Instantly</div>
+        <div class="prod-meta">
+          <span class="amz-stars">★★★★★</span>
+          <a class="rating-link" id="ratingCount">0 analyses</a>
+          <span style="color:var(--amz-lgrey)">|</span>
+          <span style="color:var(--amz-link);font-size:0.78rem;">
+            <span id="apiLed" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ccc;margin-right:3px;vertical-align:middle;"></span>
+            <span id="apiTxt">Connecting…</span>
+          </span>
+        </div>
+        <hr class="prod-divider">
+      </div>
+
+      <!-- Input -->
+      <div class="input-sec">
+        <label class="input-lbl" for="inp">Paste your Amazon review below:</label>
+        <textarea id="inp"
+          placeholder='Paste a review here or click a sample from the right panel…&#10;&#10;e.g. "This coffee maker has been running perfectly for six months. Heats up fast, easy to clean, and the coffee tastes excellent. Highly recommend."'
+          oninput="uCount()"></textarea>
+        <div class="input-bar">
+          <button class="btn-amz" onclick="analyze()">
+            <span id="bico">⚡</span> Analyze Sentiment
+          </button>
+          <button class="btn-sec" onclick="clearAll()">Clear</button>
+          <span class="char-ct" id="charct">0 characters</span>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="amz-loading" id="loadDiv">
+        <div class="amz-spinner"></div>
+        <span>Analyzing with LSTM model…</span>
+      </div>
+
+      <!-- Result -->
+      <div class="result-sec">
+        <div class="amz-result" id="resCard">
+          <div class="res-stripe"></div>
+          <div class="res-body">
+            <div class="res-top">
+              <div class="res-emoji" id="rEmoji"></div>
+              <div class="res-info">
+                <div class="res-verdict" id="rSent"></div>
+                <div class="res-sub"     id="rSub"></div>
+                <div class="res-conf"    id="rConf"></div>
+              </div>
+              <div class="res-stars-r amz-stars" id="rStars"></div>
+            </div>
+
+            <div class="score-bars">
+              <div class="score-row"><span class="score-lbl">Positive</span><div class="score-track"><div class="score-fill sf-p" id="bp"></div></div><span class="score-pct" id="pp">0%</span></div>
+              <div class="score-row"><span class="score-lbl">Negative</span><div class="score-track"><div class="score-fill sf-n" id="bn"></div></div><span class="score-pct" id="pn">0%</span></div>
+              <div class="score-row"><span class="score-lbl">Neutral</span> <div class="score-track"><div class="score-fill sf-u" id="bu"></div></div><span class="score-pct" id="pu">0%</span></div>
+            </div>
+
+            <div class="attn-sec">
+              <div class="attn-lbl">🔍 Key Words (Attention Heatmap)</div>
+              <div class="tok-wrap" id="toks"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-strip">
+        <div class="stat-cell"><div class="stat-n sn-p" id="stP">0</div><div class="stat-l">Positive</div></div>
+        <div class="stat-cell"><div class="stat-n sn-n" id="stN">0</div><div class="stat-l">Negative</div></div>
+        <div class="stat-cell"><div class="stat-n sn-u" id="stU">0</div><div class="stat-l">Neutral</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Buy box -->
+    <div class="buybox">
+      <div class="bb-label">Sentiment Analyzer Pro</div>
+      <button class="btn-cart" onclick="analyze()">⚡ Analyze Now</button>
+      <button class="btn-now"  onclick="document.getElementById('inp').focus()">✏️ Write a Review</button>
+      <hr class="bb-divider">
+      <div class="bb-row"><span class="bk">Model</span>      <span class="bv">Bidirectional LSTM</span></div>
+      <div class="bb-row"><span class="bk">Trained on</span> <span class="bv">3.6M Amazon reviews</span></div>
+      <div class="bb-row"><span class="bk">API</span>         <span class="bv">FastAPI · Port 8000</span></div>
+    </div>
+
+    <!-- Sample reviews -->
+    <div class="reviews-card">
+      <div class="rv-header">Customer Reviews</div>
+
+      <div class="rv-item" onclick="loadS(0)">
+        <div class="rv-top">
+          <div class="rv-avatar av-b">JM</div>
+          <span class="rv-name">John M.</span>
+          <span class="rv-stars">★★★★★</span>
+        </div>
+        <div class="rv-title">Absolutely incredible!</div>
+        <div class="rv-body">Works exactly as advertised and arrived two days early — incredibly impressed with the build quality.</div>
+      </div>
+
+      <div class="rv-item" onclick="loadS(1)">
+        <div class="rv-top">
+          <div class="rv-avatar av-r">SR</div>
+          <span class="rv-name">Sarah R.</span>
+          <span class="rv-stars dim">★☆☆☆☆</span>
+        </div>
+        <div class="rv-title">Total junk, avoid!</div>
+        <div class="rv-body">Broke after 4 days, support never replied, and returning it was a complete nightmare.</div>
+      </div>
+
+      <div class="rv-item" onclick="loadS(2)">
+        <div class="rv-top">
+          <div class="rv-avatar av-o">TK</div>
+          <span class="rv-name">Tim K.</span>
+          <span class="rv-stars">★★★☆☆</span>
+        </div>
+        <div class="rv-title">Decent, nothing special</div>
+        <div class="rv-body">Does the job okay. Nothing exceptional but nothing terrible. Acceptable for the price.</div>
+      </div>
+
+      <div class="rv-item" onclick="loadS(3)">
+        <div class="rv-top">
+          <div class="rv-avatar av-g">LA</div>
+          <span class="rv-name">Lisa A.</span>
+          <span class="rv-stars">★★★★★</span>
+        </div>
+        <div class="rv-title">Best purchase this year!</div>
+        <div class="rv-body">My whole family loves this! Super easy to use and effortless to clean every morning.</div>
+      </div>
+
+      <div class="rv-item" onclick="loadS(4)">
+        <div class="rv-top">
+          <div class="rv-avatar av-p">MP</div>
+          <span class="rv-name">Mike P.</span>
+          <span class="rv-stars dim">★★☆☆☆</span>
+        </div>
+        <div class="rv-title">Very disappointed</div>
+        <div class="rv-body">Colour looked nothing like the photos and the material felt impossibly cheap and flimsy.</div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="hist-card">
+      <div class="hist-header">
+        <span>Analysis History</span>
+        <button class="hist-clr" onclick="clearHist()">Clear history</button>
+      </div>
+      <div class="hist-list" id="histBody">
+        <div class="hist-empty">No analyses yet. Paste a review above!</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Back to top</div>
+
+<div class="amz-footer">
+  <div class="ft-links">
+    <a>Conditions of Use</a><a>Privacy Notice</a><a>Consumer Disclosure</a><a>Your Ads Privacy Choices</a>
+  </div>
+  <div>© 2025, Amazon Sentiment Analyzer. Powered by LSTM + FastAPI.</div>
+</div>
+
+<script>
+const POS=new Set(['great','amazing','excellent','love','wonderful','fantastic','outstanding','perfect','best','brilliant','superb','incredible','happy','pleased','delighted','awesome','beautiful','enjoyed','recommend','fast','quality','easy','helpful','professional','smooth','reliable','efficient','impressive','satisfied','good','worth','exceptional','premium','stellar','flawless','sturdy','durable','useful','convenient','affordable','value','early','clean','loved','quickly','responsive']);
+const NEG=new Set(['terrible','awful','horrible','hate','poor','bad','worst','disappointing','broken','defective','useless','waste','regret','frustrated','annoyed','slow','cheap','damaged','wrong','issue','problem','failed','disappointed','ugly','difficult','unhelpful','rude','ignored','faulty','fake','misleading','scam','disaster','overpriced','flimsy','cracked','scratched','noisy','broke','stopped','junk','nightmare','impossible','appalling','lousy']);
+const NEG2=new Set(['not','never','no','neither','barely','hardly','nothing','without',"doesn't","didn't","wasn't","isn't","aren't","won't","can't","couldn't"]);
+const NEU=new Set(['okay','ok','average','decent','fine','alright','mediocre','acceptable','fair','mixed','moderate','reasonable','adequate']);
+
+const SAMPLES=[
+  "Works exactly as advertised and arrived two days early — incredibly impressed with the build quality and packaging.",
+  "Total junk. Broke after 4 days of normal use, support never replied to my emails, and returning it was a complete nightmare.",
+  "Decent product, does the job okay. Nothing exceptional but nothing terrible. Acceptable for the price I paid.",
+  "My whole family loves this! Best purchase of the year — super easy to use and effortless to clean every single morning.",
+  "Very disappointed. Colour looked nothing like the photos online and the material felt impossibly cheap and flimsy.",
+];
+
+let stats={p:0,n:0,u:0}, history=[], total=0;
+const API='http://localhost:8000';
+
+function tok(t){ return t.toLowerCase().replace(/[^a-z0-9\s']/g,' ').split(/\s+/).filter(Boolean); }
+
+function simulate(text){
+  const tokens=tok(text);
+  const attn=tokens.map(t=>{
+    if(NEG2.has(t)) return 0.72+Math.random()*0.25;
+    if(POS.has(t))  return 0.55+Math.random()*0.42;
+    if(NEG.has(t))  return 0.55+Math.random()*0.42;
+    if(NEU.has(t))  return 0.38+Math.random()*0.32;
+    return 0.03+Math.random()*0.15;
+  });
+  let p=0,n=0,u=0.2,prev=false;
+  tokens.forEach((t,i)=>{
+    const a=attn[i];
+    if(NEG2.has(t)){prev=true;return;}
+    if(POS.has(t)){prev?n+=a*0.75:p+=a;}
+    else if(NEG.has(t)){prev?p+=a*0.25:n+=a;}
+    else if(NEU.has(t)){u+=a*0.5;}
+    else{u+=0.04;}
+    prev=false;
+  });
+  p=p*1.22+Math.random()*0.06; n=n*1.22+Math.random()*0.06; u+=Math.random()*0.18+0.12;
+  const tot=p+n+u||1; const raw=[p/tot,n/tot,u/tot];
+  const mx=Math.max(...raw); const e=raw.map(v=>Math.exp(v-mx)); const es=e.reduce((a,b)=>a+b,0);
+  const ma=Math.max(...attn,0.01);
+  return{probs:e.map(v=>v/es),tokens,attention:attn.map(v=>v/ma)};
+}
+
+async function callAPI(text){
+  try{
+    const r=await fetch(`${API}/api/predict`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text}),signal:AbortSignal.timeout(3000)});
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    document.getElementById('apiLed').style.background='#007600';
+    document.getElementById('apiTxt').textContent='FastAPI Connected';
+    return{probs:[d.scores.positive,d.scores.negative,d.scores.neutral],tokens:d.full_attention?.map(a=>a.token)||text.split(' '),attention:d.full_attention?.map(a=>a.weight)||[]};
+  }catch(e){return simulate(text);}
+}
+
+function cls(p){const[a,b,c]=p;return a>b&&a>c?'positive':b>a&&b>c?'negative':'neutral';}
+
+const EMO={positive:'😊',negative:'😞',neutral:'😐'};
+const STR={positive:'★★★★★',negative:'★★☆☆☆',neutral:'★★★☆☆'};
+const SUB={
+  positive:['Strong positive sentiment — customer loved it!','Mild positive feedback detected'],
+  negative:['Strong negative sentiment — major dissatisfaction','Mild dissatisfaction detected'],
+  neutral:['Balanced / neutral review — no strong sentiment','Objective review with mixed feedback'],
+};
+
+function renderToks(tokens,attention){
+  const ma=Math.max(...attention,0.01);
+  return tokens.slice(0,20).map((t,i)=>{
+    const a=(attention[i]||0)/ma;
+    const isP=POS.has(t),isN=NEG.has(t),isN2=NEG2.has(t),isU=NEU.has(t);
+    let bg,col,brd;
+    if(isP){bg='#DFF0D8';col='#3C763D';brd='#D6E9C6';}
+    else if(isN){bg='#F2DEDE';col='#A94442';brd='#EBCCD1';}
+    else if(isN2){bg='#FCF8E3';col='#8A6D3B';brd='#FAEBCC';}
+    else if(isU){bg='#F5F5F5';col='#777';brd='#DDD';}
+    else{const v=Math.round(a*35);bg=`rgb(${240-v},${240-v},${240-v})`;col='#555';brd='#CCC';}
+    return`<span class="tok" style="background:${bg};color:${col};border-color:${brd};font-weight:${a>0.6?'700':'400'};">${t}</span>`;
+  }).join('');
+}
+
+function uCount(){document.getElementById('charct').textContent=`${document.getElementById('inp').value.length} characters`;}
+function clearAll(){document.getElementById('inp').value='';uCount();document.getElementById('resCard').classList.remove('show');}
+function loadS(i){document.getElementById('inp').value=SAMPLES[i];uCount();document.getElementById('resCard').classList.remove('show');document.getElementById('inp').scrollIntoView({behavior:'smooth',block:'center'});}
+function clearHist(){history=[];renderHist();}
+
+function renderHist(){
+  const el=document.getElementById('histBody');
+  if(!history.length){el.innerHTML='<div class="hist-empty">No analyses yet. Paste a review above!</div>';return;}
+  el.innerHTML=history.slice().reverse().map(h=>`
+    <div class="hist-row">
+      <div class="hist-dot" style="background:${h.color};"></div>
+      <div class="hist-txt">${h.text}</div>
+      <span class="hist-badge ${h.bc}">${h.label}</span>
+    </div>`).join('');
+}
+
+async function analyze(){
+  const text=document.getElementById('inp').value.trim();
+  if(!text){document.getElementById('inp').style.boxShadow='0 0 0 3px rgba(228,121,17,0.5)';setTimeout(()=>document.getElementById('inp').style.boxShadow='',1000);return;}
+  document.getElementById('loadDiv').classList.add('on');
+  document.getElementById('resCard').classList.remove('show');
+  document.getElementById('bico').textContent='⏳';
+  await new Promise(r=>setTimeout(r,600+Math.random()*500));
+  const res=await callAPI(text);
+  document.getElementById('loadDiv').classList.remove('on');
+  document.getElementById('bico').textContent='⚡';
+
+  const s=cls(res.probs),conf=Math.max(...res.probs);
+  const [P,N,U]=[Math.round(res.probs[0]*100),Math.round(res.probs[1]*100),Math.round(res.probs[2]*100)];
+  const card=document.getElementById('resCard');
+  card.className='amz-result show rc-'+(s==='positive'?'pos':s==='negative'?'neg':'neu');
+  document.getElementById('rEmoji').textContent=EMO[s];
+  document.getElementById('rSent').textContent=s.charAt(0).toUpperCase()+s.slice(1);
+  document.getElementById('rSub').textContent=SUB[s][conf>0.79?0:1];
+  document.getElementById('rConf').textContent=`Confidence: ${(conf*100).toFixed(1)}%`;
+  document.getElementById('rStars').textContent=STR[s];
+  setTimeout(()=>{
+    document.getElementById('bp').style.width=P+'%';document.getElementById('pp').textContent=P+'%';
+    document.getElementById('bn').style.width=N+'%';document.getElementById('pn').textContent=N+'%';
+    document.getElementById('bu').style.width=U+'%';document.getElementById('pu').textContent=U+'%';
+  },80);
+  document.getElementById('toks').innerHTML=renderToks(res.tokens,res.attention);
+
+  if(s==='positive')stats.p++;else if(s==='negative')stats.n++;else stats.u++;
+  document.getElementById('stP').textContent=stats.p;
+  document.getElementById('stN').textContent=stats.n;
+  document.getElementById('stU').textContent=stats.u;
+
+  total++;
+  document.getElementById('cartCount').textContent=total;
+  document.getElementById('ratingCount').textContent=`${total} ${total===1?'analysis':'analyses'}`;
+
+  const cm={positive:'#007600',negative:'#B12704',neutral:'#565959'};
+  const bm={positive:'hb-p',negative:'hb-n',neutral:'hb-u'};
+  history.push({text:text.length>50?text.slice(0,50)+'…':text,label:s.toUpperCase(),color:cm[s],bc:bm[s]});
+  renderHist();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))analyze();});
+  fetch(`${API}/api/health`,{signal:AbortSignal.timeout(2000)})
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('apiLed').style.background=d.model_loaded?'#007600':'#e68900';
+      document.getElementById('apiTxt').textContent=d.model_loaded?'FastAPI Connected':'Model not loaded';
+    }).catch(()=>{ document.getElementById('apiTxt').textContent='Offline — simulation mode'; });
+});
+</script>
+</body>
+</html>
