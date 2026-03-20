@@ -36,7 +36,7 @@ amazon_sentiment_analysis/
 1. create and activate venv
    - `python -m venv venv`
    - `source venv/bin/activate`
-   - `Note: i am using conda environment. you can use whaterver you want`
+   - `Note: i am using conda environment. you can use whatever you want`
 
 2. install dependencies
    - `pip install -r requirements.txt`
